@@ -1,0 +1,11 @@
+id,category,task,completed,priority,dueDate,assignedTo
+ferry-naples-sorrento,transportation,Book ferry tickets: Naples → Sorrento,FALSE,high,2025-06-01,
+ferry-sorrento-naples,transportation,Book ferry tickets: Sorrento → Naples,FALSE,high,2025-06-01,
+train-sorrento-venice,transportation,Book high-speed train Sorrento → Venice (July 15),FALSE,high,2025-06-15,
+flight-venice-nice,flights,Book flight Venice → Nice (July 18),FALSE,high,2025-06-15,
+train-perpignan-barcelona,transportation,Book train Perpignan → Barcelona,FALSE,medium,2025-07-01,
+car-barcelona-valencia,transportation,Book car rental for Spain (Barcelona → Valencia),FALSE,medium,2025-07-01,
+flight-valencia-lisbon,flights,Book flight Valencia → Lisbon,FALSE,medium,2025-07-01,
+barcelona-lodging,lodging,Book Barcelona accommodation,FALSE,high,2025-05-15,
+valencia-lodging,lodging,Book Valencia accommodation,FALSE,high,2025-05-15,
+cancel-rome-cars,other,Cancel unused Rome car reservations (Enterprise Audi & Peugeot),FALSE,low,2025-05-01,

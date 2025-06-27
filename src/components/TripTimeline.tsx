@@ -1,8 +1,10 @@
 import { Stack, Box } from '@mantine/core'
-import { tripData } from '../data/tripData'
+import { useTripData } from '../hooks/useTripData'
 import DestinationCard from './DestinationCard'
 
 const TripTimeline = () => {
+  const { tripData } = useTripData()
+  
   return (
     <Stack gap="xl">
       {tripData.destinations.map((destination, index) => (
