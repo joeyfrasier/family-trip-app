@@ -1,12 +1,15 @@
 import { Container, Title, Text, Group, Badge, Stack, Paper, Alert, Button, Loader, Center } from '@mantine/core'
-import { IconMapPin, IconCalendar, IconUsers, IconRefresh, IconAlertCircle } from '@tabler/icons-react'
+import { IconMapPin, IconCalendar, IconUsers, IconRefresh, IconAlertCircle, IconSettings } from '@tabler/icons-react'
 import { format } from 'date-fns'
+import { useState } from 'react'
 import { useTripData } from './hooks/useTripData'
 import TripTimeline from './components/TripTimeline'
+import AdminInterface from './components/AdminInterface'
 
 function App() {
   const { tripData, loading, error, refetch } = useTripData()
   const { title, startDate, endDate, totalDays, countries, familyMembers } = tripData
+  const [adminModalOpened, setAdminModalOpened] = useState(false)
 
   if (loading) {
     return (
@@ -29,14 +32,24 @@ function App() {
               <Title order={1} c="dark">
                 {title}
               </Title>
-              <Button
-                variant="light"
-                leftSection={<IconRefresh size={16} />}
-                onClick={refetch}
-                size="sm"
-              >
-                Refresh
-              </Button>
+              <Group gap="sm">
+                <Button
+                  variant="light"
+                  leftSection={<IconRefresh size={16} />}
+                  onClick={refetch}
+                  size="sm"
+                >
+                  Refresh
+                </Button>
+                <Button
+                  variant="subtle"
+                  leftSection={<IconSettings size={16} />}
+                  onClick={() => setAdminModalOpened(true)}
+                  size="sm"
+                >
+                  Admin
+                </Button>
+              </Group>
             </Group>
             
             {error && (
@@ -80,6 +93,12 @@ function App() {
       <Container size="lg" pb="xl">
         <TripTimeline />
       </Container>
+
+      {/* Admin Interface */}
+      <AdminInterface 
+        opened={adminModalOpened} 
+        onClose={() => setAdminModalOpened(false)} 
+      />
     </div>
   )
 }
