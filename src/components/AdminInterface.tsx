@@ -11,12 +11,17 @@ import {
   Paper,
   Title,
   Loader,
-  Code,
-  Divider
+  Code
 } from '@mantine/core';
 import { IconAlertCircle, IconCheck, IconDownload } from '@tabler/icons-react';
 import { parseConfirmationText, type ParsedTravelData } from '../services/aiParsingService';
-import { generateCSVData, downloadCSV, type CSVData } from '../services/googleSheetsWriteService';
+import { 
+  generateSheetChanges, 
+  applyChangesToSheets,
+  generateCSVFromChanges,
+  downloadCSV, 
+  type ChangePreview 
+} from '../services/googleSheetsWriteService';
 
 interface AdminInterfaceProps {
   opened: boolean;
@@ -31,7 +36,9 @@ export default function AdminInterface({ opened, onClose }: AdminInterfaceProps)
   const [confirmationText, setConfirmationText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedTravelData | null>(null);
-  const [csvData, setCsvData] = useState<CSVData | null>(null);
+  const [changePreview, setChangePreview] = useState<ChangePreview | null>(null);
+  const [isApplyingChanges, setIsApplyingChanges] = useState(false);
+  const [applyResult, setApplyResult] = useState<{ success: boolean; message: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handlePasswordSubmit = () => {
@@ -52,18 +59,46 @@ export default function AdminInterface({ opened, onClose }: AdminInterfaceProps)
     setIsProcessing(true);
     setError(null);
     setParsedData(null);
-    setCsvData(null);
+    setChangePreview(null);
+    setApplyResult(null);
 
     try {
       const parsed = await parseConfirmationText(confirmationText);
       setParsedData(parsed);
       
-      const csv = generateCSVData(parsed);
-      setCsvData(csv);
+      const preview = generateSheetChanges(parsed);
+      setChangePreview(preview);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to parse confirmation');
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleApplyChanges = async () => {
+    if (!changePreview?.changes.length) {
+      setError('No changes to apply');
+      return;
+    }
+
+    setIsApplyingChanges(true);
+    setError(null);
+    setApplyResult(null);
+
+    try {
+      const result = await applyChangesToSheets(changePreview.changes);
+      setApplyResult(result);
+      
+      if (result.success) {
+        // Optionally refresh the data or show success message
+        setTimeout(() => {
+          window.location.reload(); // Refresh to show updated data
+        }, 2000);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to apply changes');
+    } finally {
+      setIsApplyingChanges(false);
     }
   };
 
@@ -77,7 +112,8 @@ export default function AdminInterface({ opened, onClose }: AdminInterfaceProps)
     setPassword('');
     setConfirmationText('');
     setParsedData(null);
-    setCsvData(null);
+    setChangePreview(null);
+    setApplyResult(null);
     setError(null);
     onClose();
   };
@@ -185,58 +221,62 @@ export default function AdminInterface({ opened, onClose }: AdminInterfaceProps)
               <Code block>
                 {JSON.stringify(parsedData, null, 2)}
               </Code>
+            </Stack>
+          </Paper>
+        )}
+
+        {changePreview && (
+          <Paper p="md" withBorder>
+            <Stack gap="md">
+              <Title order={4}>Proposed Changes</Title>
               
-              {csvData && (
+              <Text size="sm" c="dimmed">
+                Review the changes that will be made to your Google Sheets:
+              </Text>
+              
+              <Code block>
+                {changePreview.summary}
+              </Code>
+              
+              {changePreview.changes.length > 0 && (
                 <>
-                  <Divider />
-                  <Title order={5}>Generated CSV Files</Title>
-                  <Text size="sm" c="dimmed">
-                    Download these CSV files and paste their contents into your Google Sheets:
-                  </Text>
+                  <Group justify="space-between">
+                    <Button
+                      variant="light"
+                      leftSection={<IconDownload size={14} />}
+                      onClick={() => {
+                        const csvData = generateCSVFromChanges(changePreview.changes);
+                        Object.entries(csvData).forEach(([type, content]) => {
+                          handleDownloadCSV(content, type);
+                        });
+                      }}
+                    >
+                      Download as CSV (Manual)
+                    </Button>
+                    
+                    <Button
+                      color="green"
+                      loading={isApplyingChanges}
+                      onClick={handleApplyChanges}
+                      disabled={applyResult?.success}
+                    >
+                      {isApplyingChanges ? 'Applying Changes...' : 'Apply to Google Sheets'}
+                    </Button>
+                  </Group>
                   
-                  <Stack gap="xs">
-                    {csvData.destinations && (
-                      <Group justify="space-between">
-                        <Text size="sm">Destinations CSV</Text>
-                        <Button 
-                          size="xs" 
-                          variant="light"
-                          leftSection={<IconDownload size={14} />}
-                          onClick={() => handleDownloadCSV(csvData.destinations!, 'destinations')}
-                        >
-                          Download
-                        </Button>
-                      </Group>
-                    )}
-                    
-                    {csvData.accommodations && (
-                      <Group justify="space-between">
-                        <Text size="sm">Accommodations CSV</Text>
-                        <Button 
-                          size="xs" 
-                          variant="light"
-                          leftSection={<IconDownload size={14} />}
-                          onClick={() => handleDownloadCSV(csvData.accommodations!, 'accommodations')}
-                        >
-                          Download
-                        </Button>
-                      </Group>
-                    )}
-                    
-                    {csvData.transportation && (
-                      <Group justify="space-between">
-                        <Text size="sm">Transportation CSV</Text>
-                        <Button 
-                          size="xs" 
-                          variant="light"
-                          leftSection={<IconDownload size={14} />}
-                          onClick={() => handleDownloadCSV(csvData.transportation!, 'transportation')}
-                        >
-                          Download
-                        </Button>
-                      </Group>
-                    )}
-                  </Stack>
+                  {applyResult && (
+                    <Alert
+                      icon={<IconCheck size={16} />}
+                      color={applyResult.success ? 'green' : 'red'}
+                    >
+                      {applyResult.message}
+                      {applyResult.success && (
+                        <Text size="sm" mt="xs">
+                          Changes applied successfully! The app will refresh in 2 seconds to show updated data.
+                        </Text>
+                      )}
+                    </Alert>
+                  )}
                 </>
               )}
             </Stack>
