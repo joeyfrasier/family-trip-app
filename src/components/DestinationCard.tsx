@@ -9,7 +9,9 @@ import {
   Grid,
   Box,
   Flex,
-  Center
+  Center,
+  Image,
+  Skeleton
 } from '@mantine/core'
 import {
   IconMapPin,
@@ -24,7 +26,9 @@ import {
   IconShip
 } from '@tabler/icons-react'
 import { format, differenceInDays } from 'date-fns'
+import { useState } from 'react'
 import type { Destination } from '../types/trip'
+import { getCityImage } from '../services/cityImageService'
 
 interface DestinationCardProps {
   destination: Destination
@@ -52,33 +56,74 @@ const getStatusColor = (status: string) => {
 }
 
 const DestinationCard = ({ destination }: DestinationCardProps) => {
+  const [imageLoading, setImageLoading] = useState(true)
+  const [imageError, setImageError] = useState(false)
+  
   const nights = differenceInDays(new Date(destination.endDate), new Date(destination.startDate))
   const startDate = format(new Date(destination.startDate), 'MMM d')
   const endDate = format(new Date(destination.endDate), 'MMM d')
   const TransportIcon = destination.inboundTransport ? getTransportIcon(destination.inboundTransport.type) : null
+  const cityImage = getCityImage(destination.city)
 
   return (
     <Card shadow="lg" radius="xl" style={{ overflow: 'hidden', position: 'relative', zIndex: 1 }}>
       <Grid gutter={0}>
-        {/* Left side - Image placeholder */}
+        {/* Left side - City Image */}
         <Grid.Col span={{ base: 12, md: 4 }}>
           <Box
             h={250}
-            bg="gray.1"
             pos="relative"
             style={{
               borderTopLeftRadius: 'var(--mantine-radius-xl)',
-              borderBottomLeftRadius: 'var(--mantine-radius-xl)'
+              borderBottomLeftRadius: 'var(--mantine-radius-xl)',
+              overflow: 'hidden'
             }}
           >
-            <Center h="100%" style={{ flexDirection: 'column', gap: '0.5rem' }}>
-              <Text size="4rem" style={{ lineHeight: 1 }}>
-                {destination.flag}
-              </Text>
-              <Text fw={500} c="dimmed">
-                {destination.city}
-              </Text>
-            </Center>
+            {cityImage && !imageError ? (
+              <>
+                {imageLoading && (
+                  <Skeleton 
+                    height="100%" 
+                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} 
+                  />
+                )}
+                <Image
+                  src={cityImage.url}
+                  alt={cityImage.alt}
+                  h="100%"
+                  w="100%"
+                  fit="cover"
+                  onLoad={() => setImageLoading(false)}
+                  onError={() => {
+                    setImageLoading(false)
+                    setImageError(true)
+                  }}
+                  style={{
+                    borderTopLeftRadius: 'var(--mantine-radius-xl)',
+                    borderBottomLeftRadius: 'var(--mantine-radius-xl)'
+                  }}
+                />
+              </>
+            ) : (
+              // Fallback to flag design if image fails or not available
+              <Box
+                h="100%"
+                bg="gray.1"
+                style={{
+                  borderTopLeftRadius: 'var(--mantine-radius-xl)',
+                  borderBottomLeftRadius: 'var(--mantine-radius-xl)'
+                }}
+              >
+                <Center h="100%" style={{ flexDirection: 'column', gap: '0.5rem' }}>
+                  <Text size="4rem" style={{ lineHeight: 1 }}>
+                    {destination.flag}
+                  </Text>
+                  <Text fw={500} c="dimmed">
+                    {destination.city}
+                  </Text>
+                </Center>
+              </Box>
+            )}
             
             {/* Dates overlay */}
             <Card
@@ -88,7 +133,7 @@ const DestinationCard = ({ destination }: DestinationCardProps) => {
               top={16}
               left={16}
               p="xs"
-              style={{ backgroundColor: 'white' }}
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(4px)' }}
             >
               <Text size="sm" fw={600} c="dark">
                 {startDate} - {endDate}
