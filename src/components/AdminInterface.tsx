@@ -15,8 +15,8 @@ import {
   Divider
 } from '@mantine/core';
 import { IconAlertCircle, IconCheck, IconDownload } from '@tabler/icons-react';
-import { parseConfirmationText, ParsedTravelData } from '../services/aiParsingService';
-import { generateCSVData, downloadCSV, CSVData } from '../services/googleSheetsWriteService';
+import { parseConfirmationText, type ParsedTravelData } from '../services/aiParsingService';
+import { generateCSVData, downloadCSV, type CSVData } from '../services/googleSheetsWriteService';
 
 interface AdminInterfaceProps {
   opened: boolean;

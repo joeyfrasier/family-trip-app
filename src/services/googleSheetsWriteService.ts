@@ -1,4 +1,4 @@
-import { ParsedTravelData } from './aiParsingService';
+import type { ParsedTravelData } from './aiParsingService';
 
 export interface CSVData {
   destinations?: string;
